@@ -1,10 +1,23 @@
-FROM node:24-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
+# Use Node 20
+FROM node:24-alpine
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Copy package files first
+COPY package.json package-lock.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the app
 COPY . .
 
-RUN npm i @nestjs/cli -g
+# Build TypeScript
+RUN npm run build
 
+# Expose port
 EXPOSE 3000
-CMD ["npm", "run", "start:dev"]
+
+# Start the app
+CMD ["node", "dist/main.js"]

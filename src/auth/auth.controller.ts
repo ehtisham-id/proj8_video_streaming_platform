@@ -12,11 +12,11 @@ import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 //import { LocalAuthGuard } from './guards/local.guard';
 import { RegisterDto, LoginDto } from '../common/dto/user.dto';
-//import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
 import { JoiValidationPipe } from '../common/decorators/joi-validation.decorator';
 
-//@ApiTags('auth')
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -25,7 +25,7 @@ export class AuthController {
   ) {}
 
   @Post('register')
-  //@ApiOperation({ summary: 'Register new user' })
+  @ApiOperation({ summary: 'Register new user' })
   async register(@Body() registerDto: any) {
     // return this.authService.register(registerDto);
     null;
@@ -34,14 +34,14 @@ export class AuthController {
   //@UseGuards(LocalAuthGuard)
   @Post('login')
   @UsePipes(new JoiValidationPipe(LoginDto))
-  //@ApiOperation({ summary: 'Login user' })
+  @ApiOperation({ summary: 'Login user' })
   async login(@Req() req) {
     //return this.authService.login(req.user);
     null;
   }
 
   @Post('refresh')
-  //@ApiOperation({ summary: 'Refresh access token' })
+  @ApiOperation({ summary: 'Refresh access token' })
   async refresh(@Body('refreshToken') refreshToken: string) {
     //return this.authService.refresh(refreshToken);
     null;
@@ -56,7 +56,7 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  //@ApiOperation({ summary: 'Google OAuth login' })
+  @ApiOperation({ summary: 'Google OAuth login' })
   googleAuth(@Req() req) {}
 
   @Get('google/callback')

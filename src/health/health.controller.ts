@@ -1,12 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
-//import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
-//@ApiTags('health')
+@ApiTags('health')
 @Controller('health')
 export class HealthController {
   @Get()
- // @ApiOperation({ summary: 'Health check endpoint' })
-  //@ApiResponse({ status: 200, description: 'OK' })
+  @ApiOperation({ summary: 'Health check endpoint' })
+  @ApiResponse({ status: 200, description: 'OK' })
   check() {
     return {
       status: 'ok',
