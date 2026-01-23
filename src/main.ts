@@ -4,9 +4,12 @@ import { AppModule } from './app.module';
 import helmet from 'helmet';
 import { ValidationPipe as CustomValidationPipe } from './common/pipes/validation.pipe';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
+
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
   
   // Security
   app.use(helmet());
@@ -16,8 +19,7 @@ async function bootstrap() {
   
   // CORS
   app.enableCors({
-    origin: //process.env.ALLOWED_ORIGINS?.split(',') || 
-      
+    origin: configService.get<string>('ALLOWED_ORIGINS')?.split(',') || 
       'http://localhost:3000',
     credentials: true,
   });
@@ -32,7 +34,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(3000);
-  console.log(`🚀 Application running on: http://localhost:${80 }/api`);
+  await app.listen(configService.get<number>('PORT') || 3000);
+  console.log(`🚀 Application running on: http://localhost:${configService.get<number>('NGINX_PORT') || 80}/api`);
 }
 bootstrap();
