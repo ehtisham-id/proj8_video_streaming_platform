@@ -43,7 +43,8 @@
     "fs-extra": "",
     "fluent-ffmpeg": "",
     "@ffprobe-installer/ffprobe": "",
-    "m3u8-parser": ""
+    "m3u8-parser": "",
+    "@nestjs/schedule": ""
   },
   "devDependencies": {
     "@nestjs/cli": "",

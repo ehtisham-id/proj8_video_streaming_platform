@@ -11,6 +11,7 @@ import { KafkaModule } from './kafka/kafka.module';
 import { VideosModule } from './videos/videos.module';
 import { ProcessingModule } from './processing/processing.module';
 import { StreamingModule } from './streaming/streaming.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { StreamingModule } from './streaming/streaming.module';
     ProcessingModule,
     VideosModule, 
     StreamingModule,
+    SubscriptionsModule,
   ],
   controllers: [AppController],
   providers: [],
