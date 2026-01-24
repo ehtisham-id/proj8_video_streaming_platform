@@ -3,6 +3,12 @@
 /node_modules
 /build
 
+node_modules/*
+
+/public/demo_ui/node_modules
+
+videos
+
 # Logs
 logs
 *.log
@@ -54,3 +60,4 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+public/demo_ui/node_modules/@babel/core/lib/config/printer.js.map

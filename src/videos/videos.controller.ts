@@ -23,8 +23,6 @@ import { Express } from 'express';
 import Multer from 'multer';
 
 @ApiTags('videos')
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
 @Controller('videos')
 export class VideosController {
   constructor(
@@ -35,6 +33,8 @@ export class VideosController {
   // ============================
   // Upload video (MinIO)
   // ============================
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('video', {
@@ -63,10 +63,7 @@ export class VideosController {
     @Body() body: CreateVideoDto,
   ) {
     // Save original video to MinIO
-    const minioKey = await this.storageService.saveVideo(
-      file,
-      req.user._id,
-    );
+    const minioKey = await this.storageService.saveVideo(file, req.user._id);
 
     // Create DB record
     const video = await this.videosService.create(
@@ -90,7 +87,7 @@ export class VideosController {
   async findAll() {
     const videos = await this.videosService.findAll();
 
-    return videos.map(video => ({
+    return videos.map((video) => ({
       id: (video as any)._id,
       title: video.title,
       status: video.status,
@@ -108,7 +105,9 @@ export class VideosController {
     const url = await this.storageService.getVideoUrl(video.filename);
 
     // handle both Mongoose Document (with toObject) and plain object
-    const videoObj = (video as any)?.toObject ? (video as any).toObject() : (video as any);
+    const videoObj = (video as any)?.toObject
+      ? (video as any).toObject()
+      : (video as any);
 
     return {
       ...videoObj,
@@ -120,6 +119,8 @@ export class VideosController {
   // ============================
   // Delete video
   // ============================
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req) {
     await this.videosService.delete(id, req.user._id);

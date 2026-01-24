@@ -1,23 +1,11 @@
-import { 
-  Controller, 
-  Get, 
-  Param, 
-  Res, 
-  Req,
-  ParseFilePipe, 
-  UseGuards, 
-  HttpStatus 
-} from '@nestjs/common';
+import { Controller, Get, Param, Res, Req, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { JwtAuthGuard } from '../common/guards/jwt.guard';
 import { StreamingService } from './streaming.service';
 import { VideosService } from '../videos/videos.service';
-import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 
 @ApiTags('streaming')
 @Controller('stream')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class StreamingController {
   constructor(
     private streamingService: StreamingService,
@@ -54,7 +42,10 @@ export class StreamingController {
     @Param('quality') quality: string,
     @Res() res: Response,
   ) {
-    const playlist = await this.streamingService.getQualityPlaylist(videoId, quality);
+    const playlist = await this.streamingService.getQualityPlaylist(
+      videoId,
+      quality,
+    );
     res.set({
       'Content-Type': 'application/vnd.apple.mpegurl',
       'Cache-Control': 'no-cache',
@@ -73,12 +64,23 @@ export class StreamingController {
     @Res() res: Response,
   ) {
     const video = await this.videosService.findById(videoId);
-    if (!video.qualities?.find(q => q.playlist === quality || String(q.height) === quality || String(q.bitrate) === quality)) {
+    if (
+      !video.qualities?.find(
+        (q) =>
+          q.playlist === quality ||
+          String(q.height) === quality ||
+          String(q.bitrate) === quality,
+      )
+    ) {
       res.status(HttpStatus.NOT_FOUND).json({ error: 'Quality not found' });
       return;
     }
 
-    const segmentPath = await this.streamingService.getSegmentPath(videoId, quality, parseInt(seq));
+    const segmentPath = await this.streamingService.getSegmentPath(
+      videoId,
+      quality,
+      parseInt(seq),
+    );
     res.set({
       'Content-Type': 'video/mp2t',
       'Accept-Ranges': 'bytes',
@@ -89,19 +91,19 @@ export class StreamingController {
     // Handle range requests
     const stat = require('fs').statSync(segmentPath);
     const fileSize = stat.size;
-    
+
     const range = req.headers.range;
     if (range) {
       const parts = range.replace(/bytes=/, '').split('-');
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-      
+
       res.status(206);
       res.set({
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Content-Length': end - start + 1,
       });
-      
+
       require('fs').createReadStream(segmentPath, { start, end }).pipe(res);
     } else {
       res.sendFile(segmentPath);

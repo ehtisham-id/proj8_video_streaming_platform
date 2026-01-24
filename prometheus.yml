@@ -1,0 +1,20 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "video-streaming-platform"
+    static_configs:
+      - targets: ["localhost"]
+        labels:
+          service: video-streaming-platform
+
+  - job_name: "node"
+    static_configs:
+      - targets: ["localhost:9100"]
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+# Example: if running inside Docker compose, replace host.docker.internal
+# with the service name and port exposed by the service, e.g.:
+# targets: ['backend:3000']

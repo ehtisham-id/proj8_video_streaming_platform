@@ -141,7 +141,20 @@ services:
       mc anonymous set download myminio/videos;
       mc ilm add --prefix 'processed/' --expiry-days 90 myminio/videos;
       "
+  prometheus:
+    image: prom/prometheus
+    ports:
+    - "9090:9090"
+    volumes:
+    - ./prometheus.yml:/etc/prometheus/prometheus.yml
 
+  grafana:
+    image: grafana/grafana
+    ports:
+    - "3001:3000"
+    environment:
+    - GF_SECURITY_ADMIN_PASSWORD=admin
+    
 volumes:
   mongodb_data:
   redis_data:

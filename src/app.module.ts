@@ -14,6 +14,8 @@ import { StreamingModule } from './streaming/streaming.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { EmailsModule } from './emails/emails.module';
 import { ObservabilityModule } from './observability/observability.module';
+import { MiddlewareConsumer } from '@nestjs/common';
+import { MetricsMiddleware } from './common/middleware/metrics.middleware';
 
 @Module({
   imports: [
@@ -32,13 +34,17 @@ import { ObservabilityModule } from './observability/observability.module';
     StorageModule,
     KafkaModule,
     ProcessingModule,
-    VideosModule, 
+    VideosModule,
     StreamingModule,
     SubscriptionsModule,
     EmailsModule,
     ObservabilityModule,
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [MetricsMiddleware],
 })
-export class AppModule {}
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(MetricsMiddleware).forRoutes('*');
+  }
+}

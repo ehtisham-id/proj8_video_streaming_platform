@@ -9,8 +9,17 @@ import { ExceptionFilter } from '@nestjs/common';
 import { AllExceptionsFilter } from './common/filters/exceptions.filter';
 import express from 'express';
 
+import * as client from 'prom-client';
+import { LoggingService } from './observability/logging/logging.service';
+
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const logger = new LoggingService();
+
+  const app = await NestFactory.create(AppModule, {
+    logger: logger as any,
+    bufferLogs: true,
+  });
   const configService = app.get(ConfigService);
 
   // Security
@@ -44,6 +53,12 @@ async function bootstrap() {
       etag: false,
     }),
   );
+
+  // Metrics endpoint
+  app.use('/metrics', async (req, res) => {
+    res.set('Content-Type', client.register.contentType);
+    res.end(await client.register.metrics());
+  });
 
   // CORS
   app.enableCors({
