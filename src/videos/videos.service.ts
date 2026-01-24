@@ -39,6 +39,7 @@ export class VideosService {
     return video;
   }
 
+
   async findAll(): Promise<Video[]> {
     return this.videoModel.find({ status: { $ne: 'pending' } }).lean();
   }

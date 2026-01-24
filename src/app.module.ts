@@ -9,7 +9,7 @@ import { RedisModule } from './redis/redis.module';
 import { StorageModule } from './storage/storage.module';
 import { KafkaModule } from './kafka/kafka.module';
 import { VideosModule } from './videos/videos.module';
-
+import { ProcessingModule } from './processing/processing.module';
 
 @Module({
   imports: [
@@ -27,6 +27,7 @@ import { VideosModule } from './videos/videos.module';
     RedisModule,
     StorageModule,
     KafkaModule,
+    ProcessingModule,
     VideosModule, 
   ],
   controllers: [AppController],

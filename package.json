@@ -40,7 +40,10 @@
     "uuid": "",
     "kafkajs": "",
     "ffmpeg-static": "",
-    "fs-extra": ""
+    "fs-extra": "",
+    "fluent-ffmpeg": "",
+    "@ffprobe-installer/ffprobe": "",
+    "m3u8-parser": ""
   },
   "devDependencies": {
     "@nestjs/cli": "",

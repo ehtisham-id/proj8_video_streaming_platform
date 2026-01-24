@@ -25,6 +25,17 @@ export class Video {
 
   @Prop({ type: [String] })
   segments!: string[];
+
+  @Prop({ default: [] })
+  qualities!: Array<{
+    height: number;
+    bitrate: number;
+    segments: string[];
+    playlist: string;
+  }>;
+
+  @Prop({ default: 0 })
+  size!: number;
 }
 
 export const VideoSchema = SchemaFactory.createForClass(Video);

@@ -1,48 +1,53 @@
-import { 
-  Controller, 
-  Post, 
-  Get, 
-  Delete, 
-  Param, 
-  Body, 
-  UseGuards, 
-  Req, 
-  UploadedFile, 
-  UseInterceptors, 
-  ParseFilePipe, 
-  MaxFileSizeValidator, 
-  FileTypeValidator 
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+  UploadedFile,
+  UseInterceptors,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../common/guards/jwt.guard';
 import { VideosService } from './videos.service';
 import { CreateVideoDto } from './dto/video.dto';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
-import { diskStorage } from 'multer';
 import { StorageService } from '../storage/storage.service';
+import { Express } from 'express';
 import Multer from 'multer';
 
 @ApiTags('videos')
-@Controller('videos')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('videos')
 export class VideosController {
   constructor(
-    private videosService: VideosService,
-    private storageService: StorageService,
+    private readonly videosService: VideosService,
+    private readonly storageService: StorageService,
   ) {}
 
+  // ============================
+  // Upload video (MinIO)
+  // ============================
   @Post('upload')
-  @UseInterceptors(FileInterceptor('video', {
-    limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
-    fileFilter: (req, file, cb) => {
-      if (file.mimetype.startsWith('video/')) {
-        cb(null, true);
-      } else {
-        cb(new Error('Only video files allowed'), false);
-      }
-    },
-  }))
+  @UseInterceptors(
+    FileInterceptor('video', {
+      limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+      fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('video/')) {
+          cb(null, true);
+        } else {
+          cb(new Error('Only video files allowed'), false);
+        }
+      },
+    }),
+  )
   @ApiConsumes('multipart/form-data')
   async uploadVideo(
     @Req() req,
@@ -57,46 +62,64 @@ export class VideosController {
     file: Multer.File,
     @Body() body: CreateVideoDto,
   ) {
-    // Save to MinIO
-    const fileKey = await this.storageService.saveVideo(file, req.user._id);
-    
-    // Create video record
+    // Save original video to MinIO
+    const minioKey = await this.storageService.saveVideo(
+      file,
+      req.user._id,
+    );
+
+    // Create DB record
     const video = await this.videosService.create(
       req.user._id,
       body.title,
-      fileKey,
+      minioKey,
     );
-    
-    return { 
-      videoId: (video as any)._id, 
+
+    return {
+      videoId: (video as any)._id,
       status: 'uploaded',
-      minioKey: fileKey,
-      url: await this.storageService.getVideoUrl(fileKey),
+      minioKey,
+      url: await this.storageService.getVideoUrl(minioKey),
     };
   }
 
+  // ============================
+  // List all videos (lightweight)
+  // ============================
   @Get()
   async findAll() {
     const videos = await this.videosService.findAll();
-    return Promise.all(videos.map(async (video) => ({
+
+    return videos.map(video => ({
       id: (video as any)._id,
       title: video.title,
       status: video.status,
-      url: await this.storageService.getVideoUrl(video.filename),
+      duration: video.duration,
       createdAt: (video as any).createdAt,
-    })));
+    }));
   }
 
+  // ============================
+  // Get single video
+  // ============================
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const video = await this.videosService.findById(id);
+    const url = await this.storageService.getVideoUrl(video.filename);
+
+    // handle both Mongoose Document (with toObject) and plain object
+    const videoObj = (video as any)?.toObject ? (video as any).toObject() : (video as any);
+
     return {
-      ...video,
-      url: await this.storageService.getVideoUrl(video.filename),
+      ...videoObj,
+      url,
       playable: video.status === 'ready',
     };
   }
 
+  // ============================
+  // Delete video
+  // ============================
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req) {
     await this.videosService.delete(id, req.user._id);
