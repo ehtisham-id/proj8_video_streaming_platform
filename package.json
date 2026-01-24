@@ -33,7 +33,14 @@
     "passport-jwt": "",
     "reflect-metadata": "",
     "rxjs": "",
-    "swagger-ui-express": ""
+    "swagger-ui-express": "",
+    "multer": "",
+    "@aws-sdk/client-s3": "",
+    "@aws-sdk/s3-request-presigner": "",
+    "uuid": "",
+    "kafkajs": "",
+    "ffmpeg-static": "",
+    "fs-extra": ""
   },
   "devDependencies": {
     "@nestjs/cli": "",

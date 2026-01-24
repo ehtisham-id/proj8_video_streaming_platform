@@ -6,8 +6,9 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
 import { RedisModule } from './redis/redis.module';
-import { KafkaService } from './kafka/kafka.service';
-import { VideosService } from './videos/videos.service';
+import { StorageModule } from './storage/storage.module';
+import { KafkaModule } from './kafka/kafka.module';
+import { VideosModule } from './videos/videos.module';
 
 
 @Module({
@@ -23,9 +24,12 @@ import { VideosService } from './videos/videos.service';
     HealthModule,
     UsersModule,
     AuthModule,
-    RedisModule, 
+    RedisModule,
+    StorageModule,
+    KafkaModule,
+    VideosModule, 
   ],
   controllers: [AppController],
-  providers: [KafkaService, VideosService],
+  providers: [],
 })
 export class AppModule {}
