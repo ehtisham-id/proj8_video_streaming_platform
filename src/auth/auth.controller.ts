@@ -12,11 +12,13 @@ import { AuthGuard } from '@nestjs/passport';
 import { RegisterDto } from '@common/dto/user.dto';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Response } from 'express';
+import { JwtAuthGuard } from '@common/guards/jwt.guard';
+import { RedisService } from '../redis/redis.service';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService, private readonly redisService: RedisService) {}
 
   @Post('register')
   @ApiOperation({ summary: 'Register new user' })
@@ -38,9 +40,13 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(AuthGuard('jwt'))
-  async logout(@Req() req, @Res() res: Response) {
-    // Future: handle refresh token revocation
+  @UseGuards(JwtAuthGuard)
+  async logout(@Req() req, @Res() res) {
+    const jti = req.user.jti;
+    const ttl = 900; // 15min (access token expiry)
+
+    await this.redisService.blacklistToken(jti, ttl);
+
     res.json({ message: 'Logged out successfully' });
   }
 

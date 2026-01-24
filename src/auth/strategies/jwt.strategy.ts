@@ -1,20 +1,37 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../../users/users.service';
+import { RedisService } from '../../redis/redis.service';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private usersService: UsersService, private readonly configService: ConfigService) {
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly redisService: RedisService,
+    private readonly configService: ConfigService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET') ,
+      secretOrKey: configService.get<string>('JWT_SECRET'), // get JWT secret from config
     });
   }
 
   async validate(payload: any) {
-    return this.usersService.findById(payload.sub);
+    // 1️⃣ Check if token is blacklisted in Redis
+    if (await this.redisService.isTokenBlacklisted(payload.jti)) {
+      throw new UnauthorizedException('Token revoked');
+    }
+
+    // 2️⃣ Fetch user from DB
+    const user = await this.usersService.findById(payload.sub);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // 3️⃣ Return user payload (can include jti for token revocation tracking)
+    return { ...user, jti: payload.jti };
   }
 }

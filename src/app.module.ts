@@ -5,6 +5,8 @@ import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
+import { RedisModule } from './redis/redis.module';
+import { KafkaService } from './kafka/kafka.service';
 
 @Module({
   imports: [
@@ -18,8 +20,10 @@ import { AppController } from './app.controller';
     }),
     HealthModule,
     UsersModule,
-    AuthModule, 
+    AuthModule,
+    RedisModule, 
   ],
   controllers: [AppController],
+  providers: [KafkaService],
 })
 export class AppModule {}

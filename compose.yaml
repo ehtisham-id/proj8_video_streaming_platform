@@ -32,6 +32,15 @@ services:
       - ./videos:/var/www/videos:ro
     depends_on:
       - api
+    
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
 
 volumes:
   mongodb_data:
+  redis_data:

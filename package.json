@@ -9,6 +9,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nestjs-modules/ioredis": "^2.0.2",
     "@nestjs/common": "",
     "@nestjs/config": "",
     "@nestjs/core": "",
@@ -17,10 +18,12 @@
     "@nestjs/passport": "",
     "@nestjs/platform-express": "",
     "@nestjs/swagger": "",
+    "@nestjs/throttler": "",
     "bcryptjs": "",
     "class-validator": "",
     "crypto": "",
     "helmet": "",
+    "ioredis": "",
     "joi": "",
     "joi-password-complexity": "",
     "mongodb": "",
