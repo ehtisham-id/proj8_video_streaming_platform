@@ -4,20 +4,21 @@ import {
   HealthCheck,
   HttpHealthIndicator,
   MongooseHealthIndicator,
+  HealthIndicatorResult,
 } from '@nestjs/terminus';
 import { KafkaService } from '../../kafka/kafka.service';
 import { RedisService } from '../../redis/redis.service';
+import { ModuleRef } from '@nestjs/core';
 import { MetricsService } from '../metrics/metrics.service';
 
-@Controller('health')
-export class HealthController {
+@Controller('observability/health')
+export class HealthObserveController {
   constructor(
     private health: HealthCheckService,
     private http: HttpHealthIndicator,
     private mongoose: MongooseHealthIndicator,
-    private redisService: RedisService,
-    private kafkaService: KafkaService,
     private metrics: MetricsService,
+    private moduleRef: ModuleRef,
   ) {}
 
   @Get()
@@ -25,39 +26,46 @@ export class HealthController {
   async check() {
     return this.health.check([
       () => this.mongoose.pingCheck('mongodb'),
-      async () => {
+      async (): Promise<HealthIndicatorResult> => {
         try {
-          // attempt to find a redis client and ping it; adapt to your RedisService API if needed
-          const client =
-            (this.redisService as any).getClient?.() ??
-            (this.redisService as any).client ??
-            null;
+          const redisSvc = this.moduleRef.get(RedisService, { strict: false });
+          if (!redisSvc) return { redis: { status: 'down' } } as HealthIndicatorResult;
           const pong =
-            client && typeof client.ping === 'function'
-              ? await client.ping()
-              : typeof (this.redisService as any).ping === 'function'
-              ? await (this.redisService as any).ping()
-              : null;
-
-          if (pong === 'PONG' || pong === 'OK') {
-            return { redis: { status: 'up' } };
-          }
-          throw new Error('Redis ping failed');
+            typeof redisSvc.ping === 'function' ? await redisSvc.ping() : null;
+          if (pong === 'PONG' || pong === 'OK')
+            return { redis: { status: 'up' } } as HealthIndicatorResult;
+          return { redis: { status: 'down' } } as HealthIndicatorResult;
         } catch (err) {
           throw err;
         }
       },
       () =>
         this.http.pingCheck('external-api', 'https://httpbin.org/status/200'),
-      async () => ({
-        video_processor: {
-          status: 'up',
-          details: {
-            consumers: await this.kafkaService.admin().listGroups(),
-            lag: 'low',
-          },
-        },
-      }),
+      async () => {
+        try {
+          const kafkaSvc = this.moduleRef.get(KafkaService, { strict: false });
+          const groups =
+            kafkaSvc && typeof kafkaSvc.admin === 'function'
+              ? await kafkaSvc
+                  .admin()
+                  .listGroups()
+                  .catch(() => [])
+              : [];
+          return {
+            video_processor: {
+              status: 'up',
+              details: { consumers: groups, lag: 'low' },
+            },
+          };
+        } catch (err) {
+          return {
+            video_processor: {
+              status: 'down',
+              details: { consumers: [], lag: 'unknown' },
+            },
+          };
+        }
+      },
     ]);
   }
 

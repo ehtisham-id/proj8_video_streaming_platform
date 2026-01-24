@@ -1,20 +1,21 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
-
+  
 scrape_configs:
-  - job_name: "video-streaming-platform"
+  - job_name: 'video-streaming-platform'
     static_configs:
-      - targets: ["localhost"]
+      - targets: ['api:3000']
         labels:
           service: video-streaming-platform
 
-  - job_name: "node"
+  - job_name: 'prometheus'
     static_configs:
-      - targets: ["localhost:9100"]
-  - job_name: "prometheus"
-    static_configs:
-      - targets: ["localhost:9090"]
-# Example: if running inside Docker compose, replace host.docker.internal
-# with the service name and port exposed by the service, e.g.:
-# targets: ['backend:3000']
+      - targets: ['localhost:9090']
+
+# Notes:
+# - When running Prometheus inside Docker Compose (see compose.yaml), using
+#   the service name `api:3000` allows Prometheus to scrape the NestJS app at
+#   the internal container hostname. If you run Prometheus outside Docker,
+#   change the `video-streaming-platform` target to `localhost:3000` or
+#   `host.docker.internal:3000` depending on your environment.

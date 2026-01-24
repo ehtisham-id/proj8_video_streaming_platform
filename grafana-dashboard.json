@@ -2,15 +2,15 @@
   "title": "Video Streaming Platform",
   "panels": [
     {
-      "title": "Active Streams",
+      "title": "Active Streams (avg 5m)",
       "type": "stat",
-      "targets": [{ "expr": "rate(active_streams[5m])" }],
+      "targets": [{ "expr": "avg_over_time(active_streams[5m])" }],
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" } } }
     },
     {
-      "title": "Streaming Bandwidth",
+      "title": "Streaming Bandwidth (avg 5m)",
       "type": "timeseries",
-      "targets": [{ "expr": "increase(streaming_bandwidth_bytes[5m])" }]
+      "targets": [{ "expr": "avg_over_time(streaming_bandwidth_bytes[5m])" }]
     }
   ],
   "time": { "from": "now-6h", "to": "now" },

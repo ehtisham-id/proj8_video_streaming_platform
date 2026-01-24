@@ -51,7 +51,8 @@
     "@nestjs/terminus": "",
     "prom-client": "",
     "@willsoto/nestjs-prometheus": "",
-    "pino-pretty": ""
+    "pino-pretty": "",
+    "@nestjs/axios": ""
   },
   "devDependencies": {
     "@nestjs/cli": "",

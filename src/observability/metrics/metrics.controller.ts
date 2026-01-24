@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MetricsService } from './metrics.service';
 
 @ApiTags('metrics')
@@ -9,17 +9,17 @@ export class MetricsController {
 
   @Get()
   @ApiOperation({ summary: 'Prometheus metrics endpoint' })
-  async getMetrics() {
+  async metricsEndpoint() {
     return this.metrics.metrics();
   }
 
   @Get('streaming')
   @ApiOperation({ summary: 'Streaming-specific metrics' })
-  async getStreamingMetrics() {
+  streamingMetrics() {
     return {
       total_requests: this.metrics.getTotalHttpRequests(),
-      streaming_bandwidth: this.metrics.getStreamingBandwidthValue(),
       active_streams: this.metrics.getActiveStreamsValue(),
+      streaming_bandwidth: this.metrics.getStreamingBandwidthValue(),
     };
   }
 }
