@@ -44,7 +44,14 @@
     "fluent-ffmpeg": "",
     "@ffprobe-installer/ffprobe": "",
     "m3u8-parser": "",
-    "@nestjs/schedule": ""
+    "@nestjs/schedule": "",
+    "nodemailer": "",
+    "handlebars": "",
+    "pino": "",
+    "@nestjs/terminus": "",
+    "prom-client": "",
+    "@willsoto/nestjs-prometheus": "",
+    "pino-pretty": ""
   },
   "devDependencies": {
     "@nestjs/cli": "",

@@ -6,6 +6,7 @@ import { RegisterDto, LoginDto } from '@common/dto/user.dto';
 import { ConfigService } from '@nestjs/config';
 import { UserDocument } from '../users/schemas/user.schema';
 import { StringValue } from 'ms';
+import { KafkaService } from '../kafka/kafka.service';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +14,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly kafkaService: KafkaService,
   ) {}
 
   async register(
@@ -27,11 +29,19 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    
     const user = await this.usersService.create({
       email,
       password: hashedPassword,
       name,
     });
+    
+    const userId =
+      user && (user as any)._id && typeof (user as any)._id.toString === 'function'
+        ? (user as any)._id.toString()
+        : String((user as any)._id ?? (user as any).id ?? '');
+
+    await this.kafkaService.emit('user.created', { userId });
 
     return this.generateTokens(user);
   }

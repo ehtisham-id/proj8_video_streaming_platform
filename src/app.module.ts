@@ -12,6 +12,8 @@ import { VideosModule } from './videos/videos.module';
 import { ProcessingModule } from './processing/processing.module';
 import { StreamingModule } from './streaming/streaming.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { EmailsModule } from './emails/emails.module';
+import { ObservabilityModule } from './observability/observability.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { SubscriptionsModule } from './subscriptions/subscriptions.module';
     VideosModule, 
     StreamingModule,
     SubscriptionsModule,
+    EmailsModule,
+    ObservabilityModule,
   ],
   controllers: [AppController],
   providers: [],
