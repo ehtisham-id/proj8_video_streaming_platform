@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
 import { RedisModule } from './redis/redis.module';
 import { KafkaService } from './kafka/kafka.service';
+import { VideosService } from './videos/videos.service';
+
 
 @Module({
   imports: [
@@ -24,6 +26,6 @@ import { KafkaService } from './kafka/kafka.service';
     RedisModule, 
   ],
   controllers: [AppController],
-  providers: [KafkaService],
+  providers: [KafkaService, VideosService],
 })
 export class AppModule {}
