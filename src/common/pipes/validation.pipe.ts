@@ -6,9 +6,8 @@ export class ValidationPipe implements PipeTransform {
   transform(value: any, { metatype }: ArgumentMetadata) {
     if (!value) return value;
 
-    if (!metatype) return value;
-
-    const schema = Reflect.getMetadata('design:paramtypes', metatype)?.[0] || metatype;
+    const paramTypes = metatype ? Reflect.getMetadata('design:paramtypes', metatype) : undefined;
+    const schema = paramTypes?.[0] || metatype;
     if (!schema) return value;
 
     const { error, value: validatedValue } = schema.validate(value, {
