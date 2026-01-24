@@ -1,16 +1,22 @@
 services:
   api:
     build: .
+    container_name: api
     expose:
       - "3000"
     environment:
-      - NODE_ENV=development
-      - MONGODB_URI=mongodb://mongodb:27017/video_platform
-      - PORT=3000
+      NODE_ENV: development
+      PORT: 3000
+      MONGODB_URI: mongodb://mongodb:27017/video_platform
+      KAFKA_BROKERS: kafka:9092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     env_file:
       - .env
     depends_on:
       - mongodb
+      - kafka
+      - redis
     volumes:
       - .:/app
       - /app/node_modules
@@ -18,13 +24,24 @@ services:
 
   mongodb:
     image: mongo:latest
+    container_name: mongodb
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
   nginx:
     image: nginx:alpine
+    container_name: nginx
     ports:
       - "80:80"
     volumes:
@@ -32,19 +49,11 @@ services:
       - ./videos:/var/www/videos:ro
     depends_on:
       - api
-    
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-  
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
-    hostname: zookeeper
     container_name: zookeeper
+    hostname: zookeeper
     ports:
       - "2181:2181"
     environment:
@@ -56,8 +65,8 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
-    hostname: kafka
     container_name: kafka
+    hostname: kafka
     depends_on:
       - zookeeper
     ports:
@@ -65,26 +74,28 @@ services:
       - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_NAME_PLAINTEXT: PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
     volumes:
       - kafka_data:/var/lib/kafka/data
-  
+
   minio:
     image: minio/minio:latest
+    container_name: minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin123
     ports:
-      - "9000:9000"    # API
-      - "9001:9001"    # Console
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_data:/data
     healthcheck:
@@ -94,18 +105,18 @@ services:
       retries: 3
 
   minio-create-buckets:
-    image: minio/mc
+    image: minio/mc:latest
+    container_name: minio-create-buckets
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      until (/usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin123); do sleep 5; done;
-      /usr/bin/mc mb myminio/videos;
-      /usr/bin/mc anonymous set public-read myminio/videos;
-      /usr/bin/mc policy set public-read myminio/videos;
-      /usr/bin/mc ilm add --prefix 'processed/' --expiry-days 90 myminio/videos;
+      until mc alias set myminio http://minio:9000 minioadmin minioadmin123; do sleep 5; done;
+      mc mb --ignore-existing myminio/videos;
+      mc anonymous set download myminio/videos;
+      mc ilm add --prefix 'processed/' --expiry-days 90 myminio/videos;
       "
-    
 
 volumes:
   mongodb_data:

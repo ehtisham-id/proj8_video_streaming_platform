@@ -27,4 +27,12 @@ export class KafkaService implements OnModuleInit, OnModuleDestroy {
   getProducer() {
     return this.producer;
   }
+
+  admin() {
+    return this.kafka.admin();
+  }
+
+  consumer(groupId: string): Consumer {
+    return this.kafka.consumer({ groupId });
+  }
 }
