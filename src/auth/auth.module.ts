@@ -17,7 +17,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => ({
-        secret: config.get<string>('JWT_ACCESS_SECRET'), 
+        secret: config.get<string>('JWT_SECRET'), 
         signOptions: { expiresIn: '15m' },
       }),
     }),

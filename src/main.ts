@@ -5,7 +5,8 @@ import helmet from 'helmet';
 import { ValidationPipe as CustomValidationPipe } from './common/pipes/validation.pipe';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
-
+import { ExceptionFilter } from '@nestjs/common';
+import { AllExceptionsFilter } from './common/filters/exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -16,6 +17,7 @@ async function bootstrap() {
   
   // Global validation
   app.useGlobalPipes(new CustomValidationPipe());
+  app.useGlobalFilters(new AllExceptionsFilter());
   
   // CORS
   app.enableCors({

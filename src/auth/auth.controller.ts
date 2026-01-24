@@ -57,7 +57,7 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req, @Res() res: Response) {
     const user = req.user;
-    if (!user) return res.redirect('http://localhost:3000?error=login_failed');
+    if (!user) return res.redirect('http://localhost?error=login_failed');
 
     const tokens = await this.authService.login(user);
     // Redirect to frontend with access token
