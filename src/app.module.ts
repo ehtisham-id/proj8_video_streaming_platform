@@ -10,6 +10,7 @@ import { StorageModule } from './storage/storage.module';
 import { KafkaModule } from './kafka/kafka.module';
 import { VideosModule } from './videos/videos.module';
 import { ProcessingModule } from './processing/processing.module';
+import { StreamingModule } from './streaming/streaming.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ProcessingModule } from './processing/processing.module';
     KafkaModule,
     ProcessingModule,
     VideosModule, 
+    StreamingModule,
   ],
   controllers: [AppController],
   providers: [],

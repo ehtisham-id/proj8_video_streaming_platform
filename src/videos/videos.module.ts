@@ -11,6 +11,6 @@ import { UsersModule } from '../users/users.module';
   imports: [MongooseModule.forFeature([{ name: Video.name, schema: VideoSchema }]), UsersModule],
   controllers: [VideosController],
   providers: [VideosService, StorageService, KafkaService],
-  exports: [VideosService],
+  exports: [VideosService, MongooseModule],
 })
 export class VideosModule {}
