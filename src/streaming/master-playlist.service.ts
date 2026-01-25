@@ -11,10 +11,13 @@ export class MasterPlaylistService {
 #EXT-X-INDEPENDENT-SEGMENTS
 #EXT-X-MEDIA-SEQUENCE:0`;
 
-    video.qualities.forEach(quality => {
+    // Build master playlist with relative quality playlist paths so
+    // the client resolves them against the master playlist location.
+    video.qualities.forEach((quality) => {
+      const playlistUrl = `${quality.height}p/playlist.m3u8`;
       m3u8 += `
 #EXT-X-STREAM-INF:BANDWIDTH=${String(quality.bitrate).replace('k', '000')},RESOLUTION=${quality.height}p
-${quality.playlist}`;
+${playlistUrl}`;
     });
 
     m3u8 += '\n#EXT-X-ENDLIST';

@@ -248,13 +248,7 @@ const App = () => {
               <CreditCard className="w-4 h-4" />
               Pro
             </button>
-            <button
-              onClick={() => setView('metrics')}
-              className="px-4 py-2 bg-purple-600/20 text-purple-300 rounded-lg hover:bg-purple-600/30 transition flex items-center gap-2"
-            >
-              <Activity className="w-4 h-4" />
-              Stats
-            </button>
+
             <button
               onClick={handleLogout}
               className="px-4 py-2 bg-red-600/20 text-red-300 rounded-lg hover:bg-red-600/30 transition flex items-center gap-2"
@@ -351,13 +345,15 @@ const App = () => {
     const [status, setStatus] = useState(null);
 
     useEffect(() => {
-      fetchStatus();
-    }, []);
+      if (user?.token) fetchStatus();
+    }, [user]);
 
     const fetchStatus = async () => {
       try {
+        const token = user?.token || localStorage.getItem('token');
+        if (!token) return;
         const res = await fetch(`${API_BASE}/subscriptions/status`, {
-          headers: { 'Authorization': `Bearer ${user.token}` }
+          headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
         if (res.ok) setStatus(data);
@@ -410,7 +406,7 @@ const App = () => {
           <h2 className="text-3xl font-bold text-white mb-6">Subscription</h2>
           {status && (
             <div className="mb-6 p-4 bg-white/5 rounded-lg">
-              <p className="text-white">Status: <span className="text-purple-400 font-semibold">{status.active ? 'Active' : 'Inactive'}</span></p>
+              <p className="text-white">Status: <span className="text-purple-400 font-semibold">{status?.status === 'active' ? 'Active' : 'Inactive'}</span></p>
             </div>
           )}
           <div className="space-y-4">
@@ -436,16 +432,32 @@ const App = () => {
     const [metrics, setMetrics] = useState(null);
 
     useEffect(() => {
-      fetchMetrics();
-    }, []);
+      if (user?.token) fetchMetrics();
+    }, [user]);
 
     const fetchMetrics = async () => {
       try {
+        const token = user?.token || localStorage.getItem('token');
         const res = await fetch(`${API_BASE}/metrics/streaming`, {
-          headers: { 'Authorization': `Bearer ${user.token}` }
+          headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
         });
-        const data = await res.json();
-        if (res.ok) setMetrics(data);
+        let data;
+        try {
+          data = await res.json();
+        } catch (parseErr) {
+          console.error('Failed to parse metrics response', parseErr);
+          const text = await res.text().catch(() => '');
+          console.error('Metrics response text:', text);
+          setMetrics({ error: `Invalid response (${res.status})` });
+          return;
+        }
+
+        if (res.ok) {
+          setMetrics(data);
+        } else {
+          console.error('Metrics request failed', res.status, data);
+          setMetrics({ error: data?.message || `HTTP ${res.status}` });
+        }
       } catch (err) { }
     };
 

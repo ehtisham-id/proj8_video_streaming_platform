@@ -57,6 +57,9 @@
     "dist",
     "videos/processed",
     "**/videos/processed/**",
-    "videos/**/processed/**"
+    "videos/**/processed/**",
+    "videos/temp",
+    "**/videos/temp/**",
+    "videos/**/temp/**"
   ]
 }
