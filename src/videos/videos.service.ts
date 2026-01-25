@@ -53,9 +53,28 @@ export class VideosService {
     return this.videoModel.find({ status: { $ne: 'pending' } }).lean();
   }
 
-  async delete(id: string, userId: string): Promise<void> {
+  async delete(
+    id: string,
+    userId: string | { toString(): string },
+  ): Promise<void> {
     const video = await this.findById(id);
-    if (video.userId !== userId) {
+    // Normalize both IDs to string to avoid mismatches between ObjectId and string
+    const requesterId =
+      typeof userId === 'object' && userId?.toString
+        ? userId.toString()
+        : String(userId);
+    const ownerId =
+      typeof video.userId === 'object' && (video.userId as any)?.toString
+        ? (video.userId as any).toString()
+        : String(video.userId);
+    // Debug logging to help troubleshoot authorization mismatch (will show in service logs)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const debugInfo = { requestedBy: requesterId, owner: ownerId };
+    if (ownerId !== requesterId) {
+      // include debug info in thrown error for visibility in logs during development
+      // but do not leak sensitive info to clients
+      // eslint-disable-next-line no-console
+      console.debug('videos.delete authorization failed', debugInfo);
       throw new ForbiddenException('Not authorized');
     }
 

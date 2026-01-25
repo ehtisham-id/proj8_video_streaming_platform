@@ -7,6 +7,8 @@ WORKDIR /usr/src/app
 # Copy package files first
 COPY package.json package-lock.json ./
 
+RUN apk update && apk add ffmpeg
+
 # Install dependencies
 RUN npm install
 

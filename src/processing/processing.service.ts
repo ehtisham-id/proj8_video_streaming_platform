@@ -8,7 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { KafkaService } from '../kafka/kafka.service';
 import { StorageService } from '../storage/storage.service';
-import * as ffmpeg from 'fluent-ffmpeg';
+import ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { Video, VideoDocument } from '../videos/schemas/video.schema';

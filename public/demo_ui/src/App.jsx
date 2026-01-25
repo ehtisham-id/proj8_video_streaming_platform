@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Hls from 'hls.js';
 import { Camera, Upload, Play, Trash2, LogOut, User, CreditCard, Activity } from 'lucide-react';
 
 const API_BASE = 'http://localhost';
@@ -21,6 +22,7 @@ const App = () => {
     if (token) {
       setUser({ token });
       setView('videos');
+      fetchVideos(token);
     }
   }, []);
 
@@ -79,13 +81,17 @@ const App = () => {
     showMessage('Logged out');
   };
 
-  const fetchVideos = async () => {
+  const fetchVideos = async (tokenParam) => {
     try {
+      const tokenToUse = tokenParam || user?.token || localStorage.getItem('token');
       const res = await fetch(`${API_BASE}/videos`, {
-        headers: { 'Authorization': `Bearer ${user?.token || localStorage.getItem('token')}` }
+        headers: { 'Authorization': `Bearer ${tokenToUse}` }
       });
       const data = await res.json();
-      if (res.ok) setVideos(data.videos || []);
+      if (res.ok) {
+        const list = Array.isArray(data) ? data : data.videos || [];
+        setVideos(list);
+      }
     } catch (err) {
       showMessage('Failed to load videos');
     }
@@ -147,7 +153,14 @@ const App = () => {
     setView('player');
     setTimeout(() => {
       if (videoRef.current) {
-        videoRef.current.src = `${API_BASE}/stream/${videoId}/master.m3u8`;
+        const src = `${API_BASE}/stream/${videoId}/master.m3u8`;
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(src);
+          hls.attachMedia(videoRef.current);
+        } else {
+          videoRef.current.src = src;
+        }
         videoRef.current.load();
       }
     }, 100);

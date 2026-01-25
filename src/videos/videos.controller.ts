@@ -13,6 +13,7 @@ import {
   MaxFileSizeValidator,
   FileTypeValidator,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../common/guards/jwt.guard';
@@ -22,6 +23,7 @@ import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { StorageService } from '../storage/storage.service';
 import { Express } from 'express';
 import Multer from 'multer';
+import { isValidObjectId } from 'mongoose';
 
 @ApiTags('videos')
 @Controller('videos')
@@ -106,6 +108,10 @@ export class VideosController {
   // ============================
   @Get(':id')
   async findOne(@Param('id') id: string) {
+    if (!isValidObjectId(id)) {
+      throw new NotFoundException('Video not found');
+    }
+
     const video = await this.videosService.findById(id);
     const url = await this.storageService.getVideoUrl(video.filename);
 
@@ -128,6 +134,9 @@ export class VideosController {
   @ApiBearerAuth()
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req) {
+    if (!isValidObjectId(id)) {
+      throw new NotFoundException('Video not found');
+    }
     const userId = req?.user?._id || req?.user?.id || req?.user?.sub;
     if (!userId) {
       console.debug('remove: missing req.user or _id', { user: req?.user });
