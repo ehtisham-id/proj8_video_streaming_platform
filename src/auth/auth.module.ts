@@ -13,23 +13,20 @@ import { KafkaModule } from '../kafka/kafka.module';
   imports: [
     UsersModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    ConfigModule, 
+    ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET'), 
+        // Use access token secret for JwtModule to match generated tokens
+        secret: config.get<string>('JWT_ACCESS_SECRET'),
         signOptions: { expiresIn: '15m' },
       }),
     }),
-    KafkaModule
+    KafkaModule,
   ],
-  providers: [
-    AuthService,
-    JwtStrategy,  
-    GoogleStrategy 
-  ],
+  providers: [AuthService, JwtStrategy, GoogleStrategy],
   controllers: [AuthController],
-  exports: [AuthService], 
+  exports: [AuthService],
 })
 export class AuthModule {}

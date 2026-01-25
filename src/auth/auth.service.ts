@@ -29,15 +29,16 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    
     const user = await this.usersService.create({
       email,
       password: hashedPassword,
       name,
     });
-    
+
     const userId =
-      user && (user as any)._id && typeof (user as any)._id.toString === 'function'
+      user &&
+      (user as any)._id &&
+      typeof (user as any)._id.toString === 'function'
         ? (user as any)._id.toString()
         : String((user as any)._id ?? (user as any).id ?? '');
 
@@ -49,19 +50,14 @@ export class AuthService {
   async validateUser(
     email: string,
     password: string,
-  ): Promise<Omit<UserDocument, 'password'> | null> {
+  ): Promise<UserDocument | null> {
     const user = await this.usersService.findByEmail(email);
     if (!user) return null;
-    if (!user.password) return null;
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return null;
 
-    const userObj =
-      (user as any).toObject?.() ?? { ...(user as any) };
-    delete userObj.password;
-
-    return userObj as any;
+    return user;
   }
 
   async login(
@@ -74,12 +70,9 @@ export class AuthService {
     refreshToken: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     try {
-      const payload = this.jwtService.verify<{ sub: string }>(
-        refreshToken,
-        {
-          secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        },
-      );
+      const payload = this.jwtService.verify<{ sub: string }>(refreshToken, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      });
 
       const user = await this.usersService.findById(payload.sub);
       if (!user) {
@@ -92,35 +85,38 @@ export class AuthService {
     }
   }
 
-  private generateTokens(
-    user: any,
-  ): { accessToken: string; refreshToken: string } {
+  private generateTokens(user: any): {
+    accessToken: string;
+    refreshToken: string;
+  } {
     const id =
-      user && user._id && typeof user._id.toString === 'function'
+      user && user._id
         ? user._id.toString()
-        : String(user._id ?? user.id ?? '');
+        : user && user.id
+          ? user.id.toString()
+          : null;
 
-    const payload = {
-      email: user.email,
-      sub: id,
+    if (!id) {
+      throw new UnauthorizedException('Invalid user id');
+    }
+
+    const payload = { email: user.email, sub: id };
+
+    return {
+      accessToken: this.jwtService.sign(payload, {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+        expiresIn: this.configService.get<StringValue>(
+          'JWT_ACCESS_EXPIRES',
+          '15m',
+        ),
+      }),
+      refreshToken: this.jwtService.sign(payload, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: this.configService.get<StringValue>(
+          'JWT_REFRESH_EXPIRES',
+          '7d',
+        ),
+      }),
     };
-
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-      expiresIn: this.configService.get<StringValue>(
-        'JWT_ACCESS_EXPIRES',
-        '15m',
-      ),
-    });
-
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: this.configService.get<StringValue>(
-        'JWT_REFRESH_EXPIRES',
-        '7d',
-      ),
-    });
-
-    return { accessToken, refreshToken };
   }
 }

@@ -12,9 +12,11 @@ import {
   ParseFilePipe,
   MaxFileSizeValidator,
   FileTypeValidator,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../common/guards/jwt.guard';
+import { logger } from '../common/logger';
 import { VideosService } from './videos.service';
 import { CreateVideoDto } from './dto/video.dto';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';
@@ -38,7 +40,7 @@ export class VideosController {
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('video', {
-      limits: { fileSize: 100 * 1024 * 1024 }, // 100MB
+      limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
       fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('video/')) {
           cb(null, true);
@@ -54,7 +56,7 @@ export class VideosController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 100 * 1024 * 1024 }),
+          new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }),
           new FileTypeValidator({ fileType: 'video/*' }),
         ],
       }),
@@ -62,15 +64,19 @@ export class VideosController {
     file: Multer.File,
     @Body() body: CreateVideoDto,
   ) {
+    // Defensive: ensure we have a valid user id from the auth guard
+    const userId = req?.user?._id || req?.user?.id || req?.user?.sub;
+    if (!userId) {
+      console.debug('uploadVideo: missing req.user or _id', {
+        user: req?.user,
+      });
+      throw new UnauthorizedException('Invalid user in request');
+    }
     // Save original video to MinIO
-    const minioKey = await this.storageService.saveVideo(file, req.user._id);
+    const minioKey = await this.storageService.saveVideo(file, userId);
 
-    // Create DB record
-    const video = await this.videosService.create(
-      req.user._id,
-      body.title,
-      minioKey,
-    );
+    // Create DB record (use validated userId)
+    const video = await this.videosService.create(userId, body.title, minioKey);
 
     return {
       videoId: (video as any)._id,
@@ -123,7 +129,12 @@ export class VideosController {
   @ApiBearerAuth()
   @Delete(':id')
   async remove(@Param('id') id: string, @Req() req) {
-    await this.videosService.delete(id, req.user._id);
+    const userId = req?.user?._id || req?.user?.id || req?.user?.sub;
+    if (!userId) {
+      console.debug('remove: missing req.user or _id', { user: req?.user });
+      throw new UnauthorizedException('Invalid user in request');
+    }
+    await this.videosService.delete(id, userId);
     return { message: 'Video deleted from MinIO' };
   }
 }

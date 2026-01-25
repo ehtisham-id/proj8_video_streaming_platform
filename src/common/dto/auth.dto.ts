@@ -1,20 +1,17 @@
-// auth.dto.ts
 import * as Joi from 'joi';
-import PasswordComplexity from 'joi-password-complexity';
 
 // Register schema
-export const  RegisterSchema = Joi.object({
+export const RegisterSchema = Joi.object({
   email: Joi.string().email().required(),
-  password: PasswordComplexity({
-    min: 8,
-    max: 30,
-    lowerCase: 1,
-    upperCase: 1,
-    numeric: 1,
-    symbol: 1,
-    requirementCount: 3,
-  }).required(),
-  name: Joi.string().min(2).max(50).required(),
+  password: Joi.string()
+    .min(8)
+    .max(30)
+    .pattern(new RegExp('(?=.*[a-z])')) // at least one lowercase
+    .pattern(new RegExp('(?=.*[A-Z])')) // at least one uppercase
+    .pattern(new RegExp('(?=.*[0-9])')) // at least one number
+    .pattern(new RegExp('(?=.*[!@#$%^&*])')) // at least one special char
+    .required(),
+  name: Joi.string().min(2).max(50).optional(),
 });
 
 // Login schema

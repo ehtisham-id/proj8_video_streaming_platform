@@ -16,6 +16,7 @@ import { EmailsModule } from './emails/emails.module';
 import { ObservabilityModule } from './observability/observability.module';
 import { MiddlewareConsumer } from '@nestjs/common';
 import { MetricsMiddleware } from './common/middleware/metrics.middleware';
+import {HttpModule} from "@nestjs/axios";
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { MetricsMiddleware } from './common/middleware/metrics.middleware';
     StreamingModule,
     SubscriptionsModule,
     EmailsModule,
+    HttpModule,
     ObservabilityModule,
   ],
   controllers: [AppController],
