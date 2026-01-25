@@ -16,7 +16,6 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../common/guards/jwt.guard';
-import { logger } from '../common/logger';
 import { VideosService } from './videos.service';
 import { CreateVideoDto } from './dto/video.dto';
 import { ApiBearerAuth, ApiConsumes, ApiTags } from '@nestjs/swagger';

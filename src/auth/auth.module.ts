@@ -19,7 +19,7 @@ import { KafkaModule } from '../kafka/kafka.module';
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => ({
         // Use access token secret for JwtModule to match generated tokens
-        secret: config.get<string>('JWT_ACCESS_SECRET'),
+        secret: config.get<string>('JWT_SECRET'),
         signOptions: { expiresIn: '15m' },
       }),
     }),

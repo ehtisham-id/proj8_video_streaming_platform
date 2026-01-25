@@ -9,6 +9,7 @@ import {
   UsePipes,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Response } from 'express';
@@ -38,8 +39,13 @@ export class AuthController {
   @ApiOperation({ summary: 'Login user' })
   @UsePipes(new JoiValidationPipe(LoginSchema))
   async login(@Body() body: any) {
-    //console.log('validate:', typeof LoginSchema.validate);
-    return this.authService.login(body);
+    const user = await this.authService.validateUser(body.email, body.password);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    return this.authService.login(user);
   }
 
   @Post('refresh')

@@ -28,9 +28,7 @@ interface VideoQuality {
 }
 
 @Injectable()
-export class ProcessingService
-  implements OnModuleInit, OnModuleDestroy
-{
+export class ProcessingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ProcessingService.name);
 
   private consumer?: Consumer;
@@ -55,48 +53,48 @@ export class ProcessingService
   }
 
   async onModuleInit() {
-    this.consumer = this.kafkaService.getConsumer('video-processor');
-    await this.consumer.connect();
+    try {
+      this.consumer = this.kafkaService.getConsumer('video-processor');
+      await this.consumer.connect();
 
-    await this.consumer.subscribe({
-      topic: 'video.uploaded',
-      fromBeginning: false,
-    });
+      await this.consumer.subscribe({
+        topic: 'video.uploaded',
+        fromBeginning: false,
+      });
 
-    await this.consumer.run({
-      eachMessage: async ({ message }) => {
-        if (!message.value) return;
+      await this.consumer.run({
+        eachMessage: async ({ message }) => {
+          if (!message.value) return;
 
-        const job: ProcessingJob = JSON.parse(message.value.toString());
+          const job: ProcessingJob = JSON.parse(message.value.toString());
 
-        try {
-          await this.kafkaService.emit(
-            'video.processing.started',
-            job,
-          );
+          try {
+            await this.kafkaService.emit('video.processing.started', job);
 
-          await this.processVideo(job);
+            await this.processVideo(job);
 
-          await this.kafkaService.emit(
-            'video.processing.completed',
-            { videoId: job.videoId },
-          );
-        } catch (err: unknown) {
-          const error =
-            err instanceof Error ? err.message : 'Unknown error';
+            await this.kafkaService.emit('video.processing.completed', {
+              videoId: job.videoId,
+            });
+          } catch (err: unknown) {
+            const error = err instanceof Error ? err.message : 'Unknown error';
 
-          this.logger.error(error);
+            this.logger.error(error);
 
-          await this.kafkaService.emit(
-            'video.processing.failed',
-            {
+            await this.kafkaService.emit('video.processing.failed', {
               videoId: job.videoId,
               error,
-            },
-          );
-        }
-      },
-    });
+            });
+          }
+        },
+      });
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? `${err.message}\n${err.stack}` : String(err);
+      this.logger.error(message);
+      // rethrow so Nest knows module init failed
+      throw err;
+    }
   }
 
   async onModuleDestroy() {
@@ -106,15 +104,9 @@ export class ProcessingService
   }
 
   private async processVideo(job: ProcessingJob): Promise<void> {
-    const inputPath = path.join(
-      this.tempDir,
-      path.basename(job.filename),
-    );
+    const inputPath = path.join(this.tempDir, path.basename(job.filename));
 
-    await this.storageService.downloadToFile(
-      job.filename,
-      inputPath,
-    );
+    await this.storageService.downloadToFile(job.filename, inputPath);
 
     await this.videoModel.updateOne(
       { _id: job.videoId },
@@ -124,11 +116,7 @@ export class ProcessingService
     const qualitiesMeta: VideoQuality[] = [];
 
     for (const q of this.qualities) {
-      const qDir = path.join(
-        this.outputDir,
-        job.videoId,
-        q.label,
-      );
+      const qDir = path.join(this.outputDir, job.videoId, q.label);
 
       const playlistPath = path.join(qDir, 'playlist.m3u8');
       await fs.ensureDir(qDir);

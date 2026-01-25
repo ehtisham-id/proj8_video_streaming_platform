@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Video, VideoDocument } from './schemas/video.schema';
@@ -13,23 +17,29 @@ export class VideosService {
     private kafkaService: KafkaService,
   ) {}
 
-  async create(userId: string, title: string, fileKey: string): Promise<Video> {
-    const video = new this.videoModel({ 
-      userId, 
-      title, 
-      filename: fileKey,  // Now stores MinIO object key
-      status: 'pending' 
+  async create(
+    userId: string,
+    title: string | undefined,
+    fileKey: string,
+  ): Promise<Video> {
+    const videoTitle = title || fileKey.split('/').pop() || 'Untitled';
+
+    const video = new this.videoModel({
+      userId,
+      title: videoTitle,
+      filename: fileKey, // stores MinIO object key
+      status: 'pending',
     });
-    
+
     const saved = await video.save();
-    
+
     // Emit Kafka event with MinIO key
     await this.kafkaService.emit('video.uploaded', {
       videoId: saved._id.toString(),
       userId,
       filename: fileKey, // MinIO object key
     });
-    
+
     return saved;
   }
 
@@ -38,7 +48,6 @@ export class VideosService {
     if (!video) throw new NotFoundException('Video not found');
     return video;
   }
-
 
   async findAll(): Promise<Video[]> {
     return this.videoModel.find({ status: { $ne: 'pending' } }).lean();
@@ -49,7 +58,7 @@ export class VideosService {
     if (video.userId !== userId) {
       throw new ForbiddenException('Not authorized');
     }
-    
+
     await this.storageService.deleteVideo(video.filename);
     await this.videoModel.deleteOne({ _id: id });
   }

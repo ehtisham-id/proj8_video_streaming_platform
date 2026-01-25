@@ -12,9 +12,25 @@ import express from 'express';
 import * as client from 'prom-client';
 import { LoggingService } from './observability/logging/logging.service';
 
-
 async function bootstrap() {
   const logger = new LoggingService();
+
+  // Capture raw console.error output for debugging opaque logs
+  const _origConsoleError = console.error.bind(console);
+  const util = await import('util');
+  console.error = (...args: any[]) => {
+    try {
+      const inspected = args
+        .map((a) =>
+          typeof a === 'object' ? util.inspect(a, { depth: 5 }) : String(a),
+        )
+        .join(' ');
+      process.stdout.write(`[RAW_CONSOLE_ERROR] ${inspected}\n`);
+    } catch (e) {
+      /* ignore */
+    }
+    _origConsoleError(...args);
+  };
 
   const app = await NestFactory.create(AppModule, {
     logger: logger as any,

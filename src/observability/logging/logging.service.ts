@@ -27,7 +27,22 @@ export class LoggingService implements LoggerService {
   }
 
   error(message: any, trace?: string) {
-    this.logger.error({ trace }, message);
+    let msgStr: string;
+    if (message instanceof Error) {
+      msgStr = message.message;
+      trace = trace ?? message.stack;
+    } else if (typeof message === 'object') {
+      try {
+        msgStr = JSON.stringify(message);
+      } catch {
+        msgStr = String(message);
+      }
+    } else {
+      msgStr = String(message);
+    }
+
+    const msgWithTrace = trace ? `${msgStr}\n${trace}` : msgStr;
+    this.logger.error(msgWithTrace);
   }
 
   warn(message: any) {

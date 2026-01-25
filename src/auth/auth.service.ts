@@ -1,15 +1,21 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { v4 as uuidv4 } from 'uuid';
+import { Logger } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcryptjs';
 import { RegisterDto, LoginDto } from '@common/dto/user.dto';
 import { ConfigService } from '@nestjs/config';
-import { UserDocument } from '../users/schemas/user.schema';
 import { StringValue } from 'ms';
 import { KafkaService } from '../kafka/kafka.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
@@ -24,6 +30,10 @@ export class AuthService {
 
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
+      const { password: _pwd, ...meta } = existingUser as any;
+      this.logger.warn(
+        `Registration attempt for existing email ${email}: ${JSON.stringify(meta)}`,
+      );
       throw new UnauthorizedException('Email already exists');
     }
 
@@ -47,12 +57,19 @@ export class AuthService {
     return this.generateTokens(user);
   }
 
-  async validateUser(
-    email: string,
-    password: string,
-  ): Promise<UserDocument | null> {
+  async validateUser(email: string, password: string): Promise<any | null> {
     const user = await this.usersService.findByEmail(email);
-    if (!user) return null;
+    if (!user) {
+      this.logger.debug(`validateUser: no user found for ${email}`);
+      return null;
+    }
+    if (!user.password) {
+      const { password: _pwd, ...meta } = user as any;
+      this.logger.debug(
+        `validateUser: user has no password (maybe oauth user) ${JSON.stringify(meta)}`,
+      );
+      return null;
+    }
 
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) return null;
@@ -61,7 +78,7 @@ export class AuthService {
   }
 
   async login(
-    user: UserDocument,
+    user: any,
   ): Promise<{ accessToken: string; refreshToken: string }> {
     return this.generateTokens(user);
   }
@@ -89,29 +106,41 @@ export class AuthService {
     accessToken: string;
     refreshToken: string;
   } {
+  
+
     const id =
-      user && user._id
+      (user && user._id && typeof user._id.toString === 'function')
         ? user._id.toString()
         : user && user.id
-          ? user.id.toString()
-          : null;
+        ? String(user.id)
+        : null;
 
     if (!id) {
       throw new UnauthorizedException('Invalid user id');
     }
 
-    const payload = { email: user.email, sub: id };
+    const jti = uuidv4();
+    const payload = { email: user.email, sub: id, jti };
+
+    const accessSecret = this.configService.get<string>('JWT_SECRET');
+    const refreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+
+    if (!accessSecret || !refreshSecret) {
+      throw new InternalServerErrorException(
+        'JWT secrets are not configured. Set JWT_ACCESS_SECRET and JWT_REFRESH_SECRET in environment',
+      );
+    }
 
     return {
       accessToken: this.jwtService.sign(payload, {
-        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+        secret: accessSecret,
         expiresIn: this.configService.get<StringValue>(
           'JWT_ACCESS_EXPIRES',
           '15m',
         ),
       }),
       refreshToken: this.jwtService.sign(payload, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        secret: refreshSecret,
         expiresIn: this.configService.get<StringValue>(
           'JWT_REFRESH_EXPIRES',
           '7d',

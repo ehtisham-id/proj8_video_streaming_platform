@@ -5,8 +5,8 @@ export type VideoDocument = Video & Document;
 
 @Schema({ timestamps: true })
 export class Video {
-  @Prop({ required: true })
-  title!: string;
+  @Prop()
+  title?: string;
 
   @Prop({ required: true })
   filename!: string;
