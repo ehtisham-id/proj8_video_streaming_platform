@@ -3,6 +3,8 @@
 /node_modules
 /build
 
+dist/
+.github/
 node_modules/*
 
 /public/demo_ui/node_modules
